@@ -1,5 +1,5 @@
 const CONFIG = {
-  APP_VERSION: '2.2.0',
+  APP_VERSION: '2.3.0',
   API_KEY: 'AL-GHOZALI-PRESENSI-2026',
   TIMEZONE: 'Asia/Jakarta',
 
