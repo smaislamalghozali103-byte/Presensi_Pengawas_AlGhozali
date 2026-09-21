@@ -4,10 +4,79 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(page_title="Presensi Pengawas Al-Ghozali v2", page_icon="📝", layout="wide")
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.0"
 
 API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbwh5x9j_OaZDF5L5oO_dAcq2UdVmRpPjaL6-DsHqhs48OIN2aX39TEhMVvQwQQ1d52z/exec"
 API_KEY_DEFAULT = "AL-GHOZALI-PRESENSI-2026"
+
+# MASTER PENGAWAS DITANAM LANGSUNG DI APLIKASI.
+# Tidak mengambil daftar nama dari CSV atau Google Spreadsheet.
+MASTER_PENGAWAS = [
+    "Barirotul Choiriyah, S.E",
+    "Ir. Rachmawati, M.Pd",
+    "Ahdini Rahmatillah Lc. S.S",
+    "Verary Pratama Putri S.E",
+    "Nurlaila, SM M.Pd",
+    "Sadam Hamzah, S.Hi",
+    "Venty Rahmawati, M.Pd",
+    "Aini Syifa, S.S",
+    "Lulu Zahrotunnisa, S.Pd",
+    "M. Hidayatu Rusydi, S.H",
+    "Nailul Kunni Fureida, S.Gz",
+    "Muhammad Suhail, S.Pd.l",
+    "Muhammad Farid, S.Pd.l",
+    "Rizki Karomah, S.Si",
+    "Fadhilah, S.Pd",
+    "Bayu Nirpana, S.H., M.H",
+    "Ichsanul Afief, S.Sos",
+    "Fadilah Abidana, S.S.,M.Pd",
+    "Hamzah Robani, S.Sos, L.c, M.Kom",
+    "M. Irham Al Baihaqi",
+    "Isnan Aprizal Hafizh",
+    "Ahmad Lujaenilma, S.Kom",
+    "Ahmad Hasan Munjaji",
+    "M. Hanif Fauzi, M.Pd",
+    "Khairil Fahmi, S.Pd",
+    "Doni Subiyanto, S.E",
+    "Muhammad Akbar Al-Ghifari",
+    "Almaas Jhoung Asri",
+    "Rifqi Rahmatuloh",
+    "Nur Azizah, S.Pd",
+    "Alfi Nurfadilah",
+    "Salwa Binta Tsania",
+    "Subhan, S.Pd",
+    "Syafon Oktavia Rahma",
+    "Siti Nurzulfiah, S.Pd.I",
+    "Siti Halimah, S.Si., S.Pd",
+    "Siti Fatimah Zahra",
+    "Nazwa Yunita",
+    "Fiqih Kartika Murni, S.Pd",
+    "Anisa Siti Nabilah, S.Pd",
+    "Aulia Sabila Mufida",
+    "Dea Amanda Putri",
+    "Ilmi Miftahul Jannah",
+    "Siska Yunita Dewi",
+    "Silmi Sabila",
+    "Rahmati Kurrata'Aini, .S",
+    "Ahmad Sukanta, S.Pd",
+    "Siska Indriyani, S.Sos",
+    "Muhammad Ihsan",
+    "Muhamad Mashur",
+    "Moh Afriza Tri Wardana",
+    "M. Alief Nugraha, S.H",
+    "Hammad lyyad Faiji",
+    "Muhammad Fikri Al- Anshory",
+    "Fathurachman, S.Pd",
+    "Abdul Hariz Naufal S.Ag",
+    "Noor Faiz, S.Pd",
+    "Muhammad Zaki",
+    "Nurizal Muzaki",
+    "Abdul Fattah Azzam",
+    "Ade Ihsan Firdaus",
+    "Fahru Roji Malik S.M",
+    "Toni, S.Pd",
+    "M. Jaelani Basri, S.Pd",
+]
 
 def cfg(key, default=""):
     try:
@@ -26,10 +95,6 @@ def api(action, **payload):
         return r.json()
     except Exception as e:
         return {"ok": False, "message": f"Koneksi Apps Script gagal: {e}"}
-
-@st.cache_data(ttl=300, show_spinner=False)
-def get_pengawas(unit):
-    return api("get_pengawas", unit=unit)
 
 @st.cache_data(ttl=120, show_spinner=False)
 def get_jadwal(unit, nama):
@@ -51,27 +116,17 @@ def login_screen():
     </style>
     <div class="brand"><div style="font-size:46px">🏫</div>
     <h1>Presensi Pengawas Ujian</h1>
-    <p>Pondok Modern Al-Ghozali · Tahun Pelajaran 2026–2027</p><small style="color:#94a3b8">v2.0 · Master resmi Google Sheets · Tanpa CSV</small></div>
+    <p>Pondok Modern Al-Ghozali · Tahun Pelajaran 2026–2027</p>
+    <small style="color:#94a3b8">v2.1 · Master pengawas tertanam di aplikasi</small></div>
     <div class="card">
     """, unsafe_allow_html=True)
 
     unit = st.selectbox("Jenjang", ["SMA", "SMP"])
-    result = get_pengawas(unit)
-    if not result.get("ok"):
-        st.error(result.get("message", "Master pengawas gagal dimuat."))
-        st.stop()
-    names = result.get("data", [])
-    source = result.get("source", {})
-    source = result.get("source", {})
-    if source:
-        st.caption(f"Master: {source.get('spreadsheet_name', '')} · Sheet: {source.get('sheet_name', '')} · Sumber: Google Sheets resmi")
-    if not names:
-        st.warning("Master pengawas tidak ditemukan pada spreadsheet resmi. Sistem tidak menggunakan CSV.")
-        st.stop()
-
+    st.caption(f"Master pengawas aplikasi: {len(MASTER_PENGAWAS)} nama · Sumber: kode aplikasi")
     tab_login, tab_daftar = st.tabs(["🔐 Login", "🔑 Pendaftaran PIN"])
+
     with tab_login:
-        nama = st.selectbox("Nama Pengawas", names, key="login_nama")
+        nama = st.selectbox("Nama Pengawas", MASTER_PENGAWAS, key="login_nama")
         pin = st.text_input("PIN", type="password", max_chars=20, key="login_pin")
         if st.button("Masuk", type="primary", use_container_width=True):
             if not pin.isdigit() or len(pin) < 6:
@@ -83,8 +138,9 @@ def login_screen():
                     st.rerun()
                 else:
                     st.error(res.get("message", "Login gagal."))
+
     with tab_daftar:
-        nama = st.selectbox("Nama Pengawas", names, key="reg_nama")
+        nama = st.selectbox("Nama Pengawas", MASTER_PENGAWAS, key="reg_nama")
         pin1 = st.text_input("PIN Baru", type="password", max_chars=20, key="reg_pin1")
         pin2 = st.text_input("Ulangi PIN", type="password", max_chars=20, key="reg_pin2")
         if st.button("Simpan PIN", type="primary", use_container_width=True):
@@ -98,9 +154,7 @@ def login_screen():
                     st.success(res.get("message", "PIN berhasil disimpan."))
                 else:
                     st.error(res.get("message", "Pendaftaran PIN gagal."))
-    if st.button("♻️ Muat Ulang Master", use_container_width=True):
-        get_pengawas.clear()
-        st.rerun()
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 def main_app():
@@ -148,10 +202,14 @@ def main_app():
                         get_jadwal.clear()
                     else:
                         st.error(res.get("message", "Presensi gagal disimpan."))
+
     with tabs[1]:
         st.subheader("Jadwal Pengawasan Saya")
-        st.dataframe(df.rename(columns={"TANGGAL":"Tanggal","HARI":"Hari","JAM_KE":"Jam Ke","RUANG":"Ruang","NAMA_PENGAWAS":"Pengawas"}),
-                     use_container_width=True, hide_index=True)
+        st.dataframe(
+            df.rename(columns={"TANGGAL":"Tanggal","HARI":"Hari","JAM_KE":"Jam Ke","RUANG":"Ruang","NAMA_PENGAWAS":"Pengawas"}),
+            use_container_width=True, hide_index=True
+        )
+
     with tabs[2]:
         st.subheader("Rekap Presensi")
         res = api("get_rekap", unit=unit, nama=nama)
