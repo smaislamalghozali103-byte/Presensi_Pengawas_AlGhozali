@@ -6,7 +6,7 @@ import streamlit as st
 st.set_page_config(page_title="Presensi Pengawas Al-Ghozali v2", page_icon="📝", layout="wide")
 APP_VERSION = "2.0.0"
 
-API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyjL2HGEgoZ0gr7-gIUmb02X7WSmTal8W89h3v3y5U_WboAfiaXB_GKZiVCin_rbh8W/exec"
+API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbwNiJxbX1Z_ZG_fl99923m52OwMdgPgHDzKJAhI5dwouwgfCtAI6sIVvac-Xlc4Ear/exec"
 API_KEY_DEFAULT = "AL-GHOZALI-PRESENSI-2026"
 
 def cfg(key, default=""):
