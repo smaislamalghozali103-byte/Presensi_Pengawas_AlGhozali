@@ -285,6 +285,42 @@ function sha256_(text) {
   return bytes.map(b => ('0' + (b & 255).toString(16)).slice(-2)).join('');
 }
 
+function scheduleRows_(unit) {
+  const u = String(unit || '').trim().toUpperCase();
+  const data = SCHEDULE_DATA[u] || [];
+  const slots = u === 'SMA' ? [
+    ['21/09/2026','SENIN','I'],['21/09/2026','SENIN','II'],
+    ['22/09/2026','SELASA','I'],['22/09/2026','SELASA','II'],
+    ['23/09/2026','RABU','I'],['23/09/2026','RABU','II'],['23/09/2026','RABU','III'],
+    ['24/09/2026','KAMIS','I'],['24/09/2026','KAMIS','II'],
+    ['25/09/2026','JUMAT','I'],['25/09/2026','JUMAT','II']
+  ] : [
+    ['21/09/2026','SENIN','I'],['21/09/2026','SENIN','II'],
+    ['22/09/2026','SELASA','I'],['22/09/2026','SELASA','II'],
+    ['23/09/2026','RABU','I'],['23/09/2026','RABU','II'],['23/09/2026','RABU','III'],
+    ['24/09/2026','KAMIS','I'],['24/09/2026','KAMIS','II'],
+    ['25/09/2026','JUMAT','I']
+  ];
+  const out = [];
+  data.forEach(line => {
+    const a = String(line).split('|');
+    const ruang = String(a.shift() || '').trim();
+    a.forEach((nama, i) => {
+      if (slots[i] && String(nama).trim()) {
+        out.push({
+          UNIT:u,
+          TANGGAL:slots[i][0],
+          HARI:slots[i][1],
+          JAM_KE:slots[i][2],
+          RUANG:ruang,
+          NAMA_PENGAWAS:String(nama).trim()
+        });
+      }
+    });
+  });
+  return out;
+}
+
 function cekAksesHariIni_(p) {
   const unit = String(p.unit || '').trim().toUpperCase();
   const nama = String(p.nama || '').trim();
@@ -293,42 +329,18 @@ function cekAksesHariIni_(p) {
     return {ok:false, message:'Jenjang dan nama pengawas wajib dipilih.'};
   }
 
-  const ss = db_(unit);
-  ensureCoreSheets_(ss);
-
-  let sh = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
-  if (!sh || sh.getLastRow() <= 1) {
-    seedSchedule_(unit);
-    sh = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
-  }
-  const values = sh.getDataRange().getDisplayValues();
-
   const tanggalHariIni = Utilities.formatDate(
     new Date(),
     CONFIG.TIMEZONE,
     'dd/MM/yyyy'
   );
 
-  const jadwalHariIni = [];
+  const rows = scheduleRows_(unit).filter(r =>
+    r.TANGGAL === tanggalHariIni &&
+    normalize_(r.NAMA_PENGAWAS) === normalize_(nama)
+  );
 
-  for (let r = 1; r < values.length; r++) {
-    const tanggal = String(values[r][1] || '').trim();
-    const namaJadwal = String(values[r][5] || '').trim();
-
-    if (
-      tanggal === tanggalHariIni &&
-      normalize_(namaJadwal) === normalize_(nama)
-    ) {
-      jadwalHariIni.push({
-        tanggal: tanggal,
-        hari: values[r][2],
-        jam_ke: values[r][3],
-        ruang: values[r][4]
-      });
-    }
-  }
-
-  if (!jadwalHariIni.length) {
+  if (!rows.length) {
     return {
       ok:false,
       tanggal:tanggalHariIni,
@@ -339,10 +351,16 @@ function cekAksesHariIni_(p) {
   return {
     ok:true,
     tanggal:tanggalHariIni,
-    data:jadwalHariIni,
-    message:'Akses diberikan berdasarkan jadwal pengawasan hari ini.'
+    data:rows.map(r => ({
+      tanggal:r.TANGGAL,
+      hari:r.HARI,
+      jam_ke:r.JAM_KE,
+      ruang:r.RUANG
+    })),
+    message:'Akses diberikan berdasarkan jadwal resmi aplikasi hari ini.'
   };
 }
+
 
 function registerPin_(p) {
   const unit = String(p.unit || '').toUpperCase();
