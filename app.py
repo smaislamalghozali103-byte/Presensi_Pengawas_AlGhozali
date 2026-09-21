@@ -64,7 +64,7 @@ def login_screen():
     source = result.get("source", {})
     source = result.get("source", {})
     if source:
-        st.caption(f"Master: {source.get("spreadsheet_name","")} · Sheet: {source.get("sheet_name","")} · Sumber: Google Sheets resmi")
+        st.caption(f"Master: {source.get('spreadsheet_name', '')} · Sheet: {source.get('sheet_name', '')} · Sumber: Google Sheets resmi")
     if not names:
         st.warning("Master pengawas tidak ditemukan pada spreadsheet resmi. Sistem tidak menggunakan CSV.")
         st.stop()
