@@ -86,15 +86,29 @@ function normalize_(s) {
 }
 
 function headerMap_(sheet) {
+  const lastRow = sheet.getLastRow();
   const lastCol = sheet.getLastColumn();
-  if (!lastCol) return {};
-  const headers = sheet.getRange(1,1,1,lastCol).getDisplayValues()[0];
-  const map = {};
-  headers.forEach((v,i) => {
-    const n = normalize_(v);
-    if (n) map[n] = i;
-  });
-  return map;
+  if (!lastRow || !lastCol) return {};
+  // MASTER resmi biasanya header di baris 1. Untuk spreadsheet yang
+  // memiliki judul di atas tabel, cek sampai 5 baris pertama.
+  const scanRows = Math.min(lastRow, 5);
+  const grid = sheet.getRange(1,1,scanRows,lastCol).getDisplayValues();
+  const aliases = [
+    'NAMA PENGAWAS','NAMA_PENGAWAS','NAMA PENGAWAS UJIAN',
+    'NAMA GURU','NAMA_GURU','NAMA GURU/PENGAWAS'
+  ];
+  for (let r=0; r<grid.length; r++) {
+    const map = {};
+    grid[r].forEach((v,i) => {
+      const n = normalize_(v);
+      if (n) map[n] = i;
+    });
+    if (findColumn_(map, aliases) >= 0) {
+      map.__HEADER_ROW__ = r + 1;
+      return map;
+    }
+  }
+  return {};
 }
 
 function findColumn_(map, aliases) {
@@ -191,6 +205,7 @@ function getPengawas_(p) {
   }
 
   const values = master.sheet.getDataRange().getDisplayValues();
+  const headerRow = Number(master.map.__HEADER_ROW__ || 1);
   const unitCol = findColumn_(master.map, [
     'UNIT','JENJANG','UNIT SEKOLAH','JENJANG SEKOLAH'
   ]);
@@ -198,7 +213,7 @@ function getPengawas_(p) {
 
   const out = [];
 
-  for (let r=1; r<values.length; r++) {
+  for (let r=headerRow; r<values.length; r++) {
     const name = String(values[r][master.nameCol] || '').trim();
     if (!name) continue;
 
@@ -226,7 +241,8 @@ function getPengawas_(p) {
       spreadsheet_id:CONFIG.DATABASE[unit].ID,
       spreadsheet_name:CONFIG.DATABASE[unit].NAME,
       sheet_name:master.sheet.getName(),
-      source_type:'GOOGLE_SHEETS_MASTER'
+      source_type:'GOOGLE_SHEETS_MASTER',
+      header_row:headerRow
     }
   };
 }
