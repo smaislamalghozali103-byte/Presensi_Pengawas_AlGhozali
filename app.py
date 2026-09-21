@@ -1,10 +1,12 @@
 import os
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import requests
 import pandas as pd
 import streamlit as st
 
 st.set_page_config(page_title="Presensi Pengawas Al-Ghozali v2", page_icon="📝", layout="wide")
-APP_VERSION = "2.2.1"
+APP_VERSION = "2.3.0"
 
 API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbwh5x9j_OaZDF5L5oO_dAcq2UdVmRpPjaL6-DsHqhs48OIN2aX39TEhMVvQwQQ1d52z/exec"
 API_KEY_DEFAULT = "AL-GHOZALI-PRESENSI-2026"
@@ -96,7 +98,7 @@ def api(action, **payload):
     except Exception as e:
         return {"ok": False, "message": f"Koneksi Apps Script gagal: {e}"}
 
-@st.cache_data(ttl=120, show_spinner=False)
+@st.cache_data(ttl=15, show_spinner=False)
 def get_jadwal(unit, nama):
     return api("get_jadwal_pengawas", unit=unit, nama=nama)
 
@@ -153,6 +155,41 @@ def login_screen():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+def waktu_sekarang():
+    return datetime.now(ZoneInfo("Asia/Jakarta"))
+
+def jadwal_realtime(df):
+    now = waktu_sekarang()
+    hari_map = {"Monday":"SENIN", "Tuesday":"SELASA", "Wednesday":"RABU", "Thursday":"KAMIS", "Friday":"JUMAT", "Saturday":"SABTU", "Sunday":"MINGGU"}
+    hari_ini = hari_map[now.strftime("%A")]
+    tanggal_ini = now.strftime("%d/%m/%Y")
+    hari_col = df["HARI"].astype(str).str.upper().str.strip()
+    tanggal_col = df["TANGGAL"].astype(str).str.strip()
+    today = df[(tanggal_col == tanggal_ini) & (hari_col == hari_ini)].copy()
+    if today.empty:
+        return today, None, now, hari_ini, tanggal_ini
+    def jam_int(v):
+        try:
+            return int(float(v))
+        except Exception:
+            return 0
+    today["_jam"] = today["JAM_KE"].map(jam_int)
+    # Jadwal per jam ke: slot berjalan berdasarkan jam pelajaran, dengan toleransi tampilan.
+    slot = None
+    if not today.empty:
+        first = int(today["_jam"].min())
+        last = int(today["_jam"].max())
+        # JAM KE dipakai sebagai urutan realtime; slot aktif = jam ke terakhir yang sudah dimulai.
+        elapsed = now.hour * 60 + now.minute
+        # Rentang perkiraan slot berdasarkan nomor jam: 07:00 + (jam-1)*50 menit.
+        for j in sorted(today["_jam"].unique()):
+            start = 7 * 60 + (int(j) - 1) * 50
+            end = start + 50
+            if start <= elapsed < end:
+                slot = j
+                break
+    return today, slot, now, hari_ini, tanggal_ini
+
 def main_app():
     unit, nama = st.session_state.unit, st.session_state.nama
     st.markdown("""
@@ -191,8 +228,20 @@ def main_app():
 
     with tabs[0]:
         st.subheader("Input Kehadiran")
-        tanggal = st.selectbox("Tanggal Ujian", sorted(df.TANGGAL.astype(str).unique()))
-        day = df[df.TANGGAL.astype(str) == tanggal]
+        today_df, active_slot, now, hari_ini, tanggal_ini = jadwal_realtime(df)
+        st.caption(f"🕐 Waktu Jakarta: {now.strftime('%d/%m/%Y %H:%M:%S')} · {hari_ini}")
+        if today_df.empty:
+            st.info("Tidak ada jadwal pengawasan Anda pada hari ini.")
+            return
+        today_df = today_df.sort_values(["_jam"] if "_jam" in today_df.columns else ["JAM_KE"])
+        if active_slot is not None:
+            active = today_df[today_df["_jam"] == active_slot]
+            if not active.empty:
+                st.success(f"🔴 **JADWAL SEDANG BERLANGSUNG — JAM KE {active_slot}**")
+                st.dataframe(active.drop(columns=["_jam"], errors="ignore").rename(columns={"TANGGAL":"Tanggal","HARI":"Hari","JAM_KE":"Jam Ke","RUANG":"Ruang","NAMA_PENGAWAS":"Pengawas"}), use_container_width=True, hide_index=True)
+        else:
+            st.info("Belum masuk jam pengawasan. Jadwal hari ini tetap ditampilkan di bawah.")
+        day = today_df
         opts = [f"Ruang {r.RUANG} · Jam {r.JAM_KE} · {r.HARI}" for _, r in day.iterrows()]
         choice = st.selectbox("Jadwal", opts)
         row = day.iloc[opts.index(choice)].to_dict()
@@ -216,10 +265,17 @@ def main_app():
 
     with tabs[1]:
         st.subheader("Jadwal Pengawasan Saya")
-        st.dataframe(
-            df.rename(columns={"TANGGAL":"Tanggal","HARI":"Hari","JAM_KE":"Jam Ke","RUANG":"Ruang","NAMA_PENGAWAS":"Pengawas"}),
-            use_container_width=True, hide_index=True
-        )
+        today_df, active_slot, now, hari_ini, tanggal_ini = jadwal_realtime(df)
+        st.caption(f"🔄 Real-time · diperbarui otomatis setiap 15 detik · {now.strftime('%H:%M:%S')} WIB")
+        if not today_df.empty:
+            if active_slot is not None:
+                st.success(f"🔴 Sedang berlangsung: JAM KE {active_slot}")
+            st.dataframe(
+                today_df.drop(columns=["_jam"], errors="ignore").rename(columns={"TANGGAL":"Tanggal","HARI":"Hari","JAM_KE":"Jam Ke","RUANG":"Ruang","NAMA_PENGAWAS":"Pengawas"}),
+                use_container_width=True, hide_index=True
+            )
+        else:
+            st.info("Tidak ada jadwal Anda untuk hari ini.")
 
     with tabs[2]:
         st.subheader("Rekap Presensi")
