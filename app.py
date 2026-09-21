@@ -190,6 +190,7 @@ def jadwal_realtime(df):
                 break
     return today, slot, now, hari_ini, tanggal_ini
 
+@st.fragment(run_every="15s")
 def main_app():
     unit, nama = st.session_state.unit, st.session_state.nama
     st.markdown("""
