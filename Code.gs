@@ -297,7 +297,11 @@ function cekAksesHariIni_(p) {
   const ss = db_(unit);
   ensureCoreSheets_(ss);
 
-  const sh = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
+  let sh = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
+  if (!sh || sh.getLastRow() <= 1) {
+    seedSchedule_(unit);
+    sh = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
+  }
   const values = sh.getDataRange().getDisplayValues();
 
   const tanggalHariIni = Utilities.formatDate(
@@ -447,8 +451,12 @@ function getJadwal_(p) {
   const ss = db_(unit);
   ensureCoreSheets_(ss);
 
-  const v = ss.getSheetByName(CONFIG.SHEETS.JADWAL)
-    .getDataRange().getDisplayValues();
+  let scheduleSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
+  if (!scheduleSheet || scheduleSheet.getLastRow() <= 1) {
+    seedSchedule_(unit);
+    scheduleSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
+  }
+  const v = scheduleSheet.getDataRange().getDisplayValues();
 
   const out = [];
 
@@ -489,8 +497,12 @@ function checkin_(p) {
   const ss = db_(unit);
   ensureCoreSheets_(ss);
 
-  const jad = ss.getSheetByName(CONFIG.SHEETS.JADWAL)
-    .getDataRange().getDisplayValues();
+  let jadwalSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
+  if (!jadwalSheet || jadwalSheet.getLastRow() <= 1) {
+    seedSchedule_(unit);
+    jadwalSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
+  }
+  const jad = jadwalSheet.getDataRange().getDisplayValues();
 
   let scheduled = false;
   let jumlah = 0;
