@@ -337,6 +337,35 @@ function login_(p) {
   };
 }
 
+function seedSchedule_(unit) {
+  const u=String(unit||'').toUpperCase();
+  const data=SCHEDULE_DATA[u]||[];
+  const ss=db_(u);
+  const sh=ensureSheet_(ss,CONFIG.SHEETS.JADWAL,['UNIT','TANGGAL','HARI','JAM_KE','RUANG','NAMA_PENGAWAS']);
+  if(sh.getLastRow()>1) return {inserted:0,existing:sh.getLastRow()-1};
+  const slots=u==='SMA' ? [
+    ['21/09/2026','SENIN','I'],['21/09/2026','SENIN','II'],
+    ['22/09/2026','SELASA','I'],['22/09/2026','SELASA','II'],
+    ['23/09/2026','RABU','I'],['23/09/2026','RABU','II'],['23/09/2026','RABU','III'],
+    ['24/09/2026','KAMIS','I'],['24/09/2026','KAMIS','II'],
+    ['25/09/2026','JUMAT','I'],['25/09/2026','JUMAT','II']
+  ] : [
+    ['21/09/2026','SENIN','I'],['21/09/2026','SENIN','II'],
+    ['22/09/2026','SELASA','I'],['22/09/2026','SELASA','II'],
+    ['23/09/2026','RABU','I'],['23/09/2026','RABU','II'],['23/09/2026','RABU','III'],
+    ['24/09/2026','KAMIS','I'],['24/09/2026','KAMIS','II'],
+    ['25/09/2026','JUMAT','I']
+  ];
+  const out=[];
+  data.forEach(line=>{
+    const a=line.split('|');
+    const room=a.shift();
+    a.forEach((name,i)=>{ if(slots[i] && name.trim()) out.push([u,slots[i][0],slots[i][1],slots[i][2],room,name.trim()]); });
+  });
+  if(out.length) sh.getRange(sh.getLastRow()+1,1,out.length,6).setValues(out);
+  return {inserted:out.length,existing:0};
+}
+
 function getJadwal_(p) {
   const unit = String(p.unit || '').toUpperCase();
   const nama = String(p.nama || '').trim();
