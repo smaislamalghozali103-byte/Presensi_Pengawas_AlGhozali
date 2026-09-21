@@ -3,7 +3,8 @@ import requests
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="Presensi Pengawas Al-Ghozali", page_icon="📝", layout="wide")
+st.set_page_config(page_title="Presensi Pengawas Al-Ghozali v2", page_icon="📝", layout="wide")
+APP_VERSION = "2.0.0"
 
 API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbyjL2HGEgoZ0gr7-gIUmb02X7WSmTal8W89h3v3y5U_WboAfiaXB_GKZiVCin_rbh8W/exec"
 API_KEY_DEFAULT = "AL-GHOZALI-PRESENSI-2026"
@@ -50,7 +51,7 @@ def login_screen():
     </style>
     <div class="brand"><div style="font-size:46px">🏫</div>
     <h1>Presensi Pengawas Ujian</h1>
-    <p>Pondok Modern Al-Ghozali · Tahun Pelajaran 2026–2027</p></div>
+    <p>Pondok Modern Al-Ghozali · Tahun Pelajaran 2026–2027</p><small style="color:#94a3b8">v2.0 · Master resmi Google Sheets · Tanpa CSV</small></div>
     <div class="card">
     """, unsafe_allow_html=True)
 
@@ -60,8 +61,11 @@ def login_screen():
         st.error(result.get("message", "Master pengawas gagal dimuat."))
         st.stop()
     names = result.get("data", [])
+    source = result.get("source", {})
+    if source:
+        st.caption(f"Master: {source.get("spreadsheet_name","")} · Sheet: {source.get("sheet_name","")} · Sumber: Google Sheets resmi")
     if not names:
-        st.warning("Master pengawas tidak ditemukan pada spreadsheet jenjang ini.")
+        st.warning("Master pengawas tidak ditemukan pada spreadsheet resmi. Sistem tidak menggunakan CSV.")
         st.stop()
 
     tab_login, tab_daftar = st.tabs(["🔐 Login", "🔑 Pendaftaran PIN"])
