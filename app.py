@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(page_title="Presensi Pengawas Al-Ghozali v2", page_icon="📝", layout="wide")
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.2.1"
 
 API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbwh5x9j_OaZDF5L5oO_dAcq2UdVmRpPjaL6-DsHqhs48OIN2aX39TEhMVvQwQQ1d52z/exec"
 API_KEY_DEFAULT = "AL-GHOZALI-PRESENSI-2026"
@@ -113,12 +113,18 @@ def login_screen():
     <style>
     .stApp{background:#ffffff;color:#111111}
     .block-container{max-width:560px;padding-top:2.2rem;padding-bottom:2rem}
-    .login-card{background:#fff;border:1px solid #d9d9d9;border-radius:12px;padding:22px}
+    .login-card{background:#fff!important;border:1px solid #d9d9d9;border-radius:12px;padding:22px}
     .brand{text-align:center;margin-bottom:16px}
     .brand h1{font-size:24px;margin:6px 0;color:#111}
     .brand p{font-size:14px;margin:0;color:#333}
     .brand small{color:#666}
-    label,p,span,div{color:#111}
+    .login-card label,.login-card p,.login-card span{color:#111!important}
+    .login-card div[data-baseweb="select"] > div{background:#fff!important;color:#111!important;border:1px solid #bdbdbd!important}
+    .login-card div[data-baseweb="select"] input{color:#111!important;background:#fff!important}
+    .login-card div[data-baseweb="select"] svg{fill:#111!important}
+    .login-card div[role="listbox"]{background:#fff!important;color:#111!important;border:1px solid #bdbdbd!important}
+    .login-card div[role="option"]{background:#fff!important;color:#111!important}
+    .login-card div[role="option"]:hover{background:#f2f2f2!important;color:#111!important}
     </style>
     <div class="brand">
       <div style="font-size:30px">🏫</div>
@@ -156,7 +162,13 @@ def main_app():
     h1{font-size:25px!important;color:#111!important}
     h2{font-size:20px!important;color:#111!important}
     h3{font-size:17px!important;color:#111!important}
-    p,span,label,div{color:#111}
+    p,span,label{color:#111}
+    div[data-baseweb="select"] > div{background:#fff!important;color:#111!important;border:1px solid #bdbdbd!important}
+    div[data-baseweb="select"] input{color:#111!important;background:#fff!important}
+    div[data-baseweb="select"] svg{fill:#111!important}
+    div[role="listbox"]{background:#fff!important;color:#111!important}
+    div[role="option"]{background:#fff!important;color:#111!important}
+    div[role="option"]:hover{background:#f2f2f2!important;color:#111!important}
     </style>
     """, unsafe_allow_html=True)
     c1, c2 = st.columns([5, 1])
