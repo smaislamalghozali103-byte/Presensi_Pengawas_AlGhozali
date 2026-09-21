@@ -1,5 +1,5 @@
 const CONFIG = {
-  APP_VERSION: '2.1.0',
+  APP_VERSION: '2.2.0',
   API_KEY: 'AL-GHOZALI-PRESENSI-2026',
   TIMEZONE: 'Asia/Jakarta',
 
@@ -34,6 +34,7 @@ function doPost(e) {
     }
 
     switch (String(p.action || '').toLowerCase()) {
+      case 'cek_akses_hari_ini': return json_(cekAksesHariIni_(p));
       case 'get_pengawas': return json_(getPengawas_(p));
       case 'register_pin': return json_(registerPin_(p));
       case 'login': return json_(login_(p));
@@ -283,6 +284,61 @@ function sha256_(text) {
     Utilities.Charset.UTF_8
   );
   return bytes.map(b => ('0' + (b & 255).toString(16)).slice(-2)).join('');
+}
+
+function cekAksesHariIni_(p) {
+  const unit = String(p.unit || '').trim().toUpperCase();
+  const nama = String(p.nama || '').trim();
+
+  if (!unit || !nama) {
+    return {ok:false, message:'Jenjang dan nama pengawas wajib dipilih.'};
+  }
+
+  const ss = db_(unit);
+  ensureCoreSheets_(ss);
+
+  const sh = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
+  const values = sh.getDataRange().getDisplayValues();
+
+  const tanggalHariIni = Utilities.formatDate(
+    new Date(),
+    CONFIG.TIMEZONE,
+    'dd/MM/yyyy'
+  );
+
+  const jadwalHariIni = [];
+
+  for (let r = 1; r < values.length; r++) {
+    const tanggal = String(values[r][1] || '').trim();
+    const namaJadwal = String(values[r][5] || '').trim();
+
+    if (
+      tanggal === tanggalHariIni &&
+      normalize_(namaJadwal) === normalize_(nama)
+    ) {
+      jadwalHariIni.push({
+        tanggal: tanggal,
+        hari: values[r][2],
+        jam_ke: values[r][3],
+        ruang: values[r][4]
+      });
+    }
+  }
+
+  if (!jadwalHariIni.length) {
+    return {
+      ok:false,
+      tanggal:tanggalHariIni,
+      message:'Akses ditolak. Nama ini tidak memiliki jadwal pengawasan pada hari ini.'
+    };
+  }
+
+  return {
+    ok:true,
+    tanggal:tanggalHariIni,
+    data:jadwalHariIni,
+    message:'Akses diberikan berdasarkan jadwal pengawasan hari ini.'
+  };
 }
 
 function registerPin_(p) {
