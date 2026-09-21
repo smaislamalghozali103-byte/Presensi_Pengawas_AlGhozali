@@ -1,0 +1,8 @@
+{
+  "name": "Presensi Pengawas Al-Ghozali",
+  "description": "Sistem presensi pengawas ujian Pondok Modern Al-Ghozali dengan jadwal realtime dan rekap kehadiran.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
