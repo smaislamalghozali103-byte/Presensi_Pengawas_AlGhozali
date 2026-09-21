@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(page_title="Presensi Pengawas Al-Ghozali v2", page_icon="📝", layout="wide")
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.2.0"
 
 API_URL_DEFAULT = "https://script.google.com/macros/s/AKfycbwh5x9j_OaZDF5L5oO_dAcq2UdVmRpPjaL6-DsHqhs48OIN2aX39TEhMVvQwQQ1d52z/exec"
 API_KEY_DEFAULT = "AL-GHOZALI-PRESENSI-2026"
@@ -100,66 +100,65 @@ def api(action, **payload):
 def get_jadwal(unit, nama):
     return api("get_jadwal_pengawas", unit=unit, nama=nama)
 
+def cek_akses(unit, nama):
+    return api("cek_akses_hari_ini", unit=unit, nama=nama)
+
 def logout():
-    for k in ("logged_in", "nama", "unit"):
+    for k in ("logged_in", "nama", "unit", "access_date"):
         st.session_state.pop(k, None)
     st.rerun()
 
 def login_screen():
     st.markdown("""
     <style>
-    .stApp{background:linear-gradient(135deg,#f8fafc,#eef6ff,#fff)}
-    .block-container{max-width:850px;padding-top:4rem}
-    .brand{text-align:center;margin-bottom:22px}.brand h1{color:#0f172a}
-    .brand p{color:#64748b}.card{background:#fff;border:1px solid #e2e8f0;
-    border-radius:22px;padding:28px;box-shadow:0 18px 50px rgba(15,23,42,.08)}
+    .stApp{background:#ffffff;color:#111111}
+    .block-container{max-width:560px;padding-top:2.2rem;padding-bottom:2rem}
+    .login-card{background:#fff;border:1px solid #d9d9d9;border-radius:12px;padding:22px}
+    .brand{text-align:center;margin-bottom:16px}
+    .brand h1{font-size:24px;margin:6px 0;color:#111}
+    .brand p{font-size:14px;margin:0;color:#333}
+    .brand small{color:#666}
+    label,p,span,div{color:#111}
     </style>
-    <div class="brand"><div style="font-size:46px">🏫</div>
-    <h1>Presensi Pengawas Ujian</h1>
-    <p>Pondok Modern Al-Ghozali · Tahun Pelajaran 2026–2027</p>
-    <small style="color:#94a3b8">v2.1 · Master pengawas tertanam di aplikasi</small></div>
-    <div class="card">
+    <div class="brand">
+      <div style="font-size:30px">🏫</div>
+      <h1>Presensi Pengawas Ujian</h1>
+      <p>Pondok Modern Al-Ghozali · 2026–2027</p>
+      <small>Pilih jenjang dan nama sesuai jadwal hari ini.</small>
+    </div>
+    <div class="login-card">
     """, unsafe_allow_html=True)
 
     unit = st.selectbox("Jenjang", ["SMA", "SMP"])
-    st.caption(f"Master pengawas aplikasi: {len(MASTER_PENGAWAS)} nama · Sumber: kode aplikasi")
-    tab_login, tab_daftar = st.tabs(["🔐 Login", "🔑 Pendaftaran PIN"])
+    nama = st.selectbox("Nama Pengawas", MASTER_PENGAWAS)
 
-    with tab_login:
-        nama = st.selectbox("Nama Pengawas", MASTER_PENGAWAS, key="login_nama")
-        pin = st.text_input("PIN", type="password", max_chars=20, key="login_pin")
-        if st.button("Masuk", type="primary", use_container_width=True):
-            if not pin.isdigit() or len(pin) < 6:
-                st.error("PIN harus berupa angka minimal 6 digit.")
-            else:
-                res = api("login", unit=unit, nama=nama, pin=pin)
-                if res.get("ok"):
-                    st.session_state.update(logged_in=True, nama=nama, unit=unit)
-                    st.rerun()
-                else:
-                    st.error(res.get("message", "Login gagal."))
-
-    with tab_daftar:
-        nama = st.selectbox("Nama Pengawas", MASTER_PENGAWAS, key="reg_nama")
-        pin1 = st.text_input("PIN Baru", type="password", max_chars=20, key="reg_pin1")
-        pin2 = st.text_input("Ulangi PIN", type="password", max_chars=20, key="reg_pin2")
-        if st.button("Simpan PIN", type="primary", use_container_width=True):
-            if not pin1.isdigit() or len(pin1) < 6:
-                st.error("PIN minimal 6 digit dan hanya angka.")
-            elif pin1 != pin2:
-                st.error("Konfirmasi PIN tidak sama.")
-            else:
-                res = api("register_pin", unit=unit, nama=nama, pin=pin1)
-                if res.get("ok"):
-                    st.success(res.get("message", "PIN berhasil disimpan."))
-                else:
-                    st.error(res.get("message", "Pendaftaran PIN gagal."))
+    if st.button("Masuk", type="primary", use_container_width=True):
+        res = cek_akses(unit, nama)
+        if res.get("ok"):
+            st.session_state.update(
+                logged_in=True,
+                nama=nama,
+                unit=unit,
+                access_date=res.get("tanggal", "")
+            )
+            st.rerun()
+        else:
+            st.error(res.get("message", "Anda tidak memiliki jadwal pengawasan hari ini."))
 
     st.markdown("</div>", unsafe_allow_html=True)
 
 def main_app():
     unit, nama = st.session_state.unit, st.session_state.nama
-    st.markdown("<style>.stApp{background:#f8fafc}.block-container{max-width:1250px}</style>", unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    .stApp{background:#fff;color:#111}
+    .block-container{max-width:1100px;padding-top:1.4rem}
+    h1{font-size:25px!important;color:#111!important}
+    h2{font-size:20px!important;color:#111!important}
+    h3{font-size:17px!important;color:#111!important}
+    p,span,label,div{color:#111}
+    </style>
+    """, unsafe_allow_html=True)
     c1, c2 = st.columns([5, 1])
     with c1:
         st.title("📝 Presensi Pengawas")
