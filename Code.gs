@@ -464,35 +464,11 @@ function seedSchedule_(unit) {
 function getJadwal_(p) {
   const unit = String(p.unit || '').toUpperCase();
   const nama = String(p.nama || '').trim();
-
-  const ss = db_(unit);
-  ensureCoreSheets_(ss);
-
-  let scheduleSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
-  if (!scheduleSheet || scheduleSheet.getLastRow() <= 1) {
-    seedSchedule_(unit);
-    scheduleSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
-  }
-  const v = scheduleSheet.getDataRange().getDisplayValues();
-
-  const out = [];
-
-  for (let r=1; r<v.length; r++) {
-    if (normalize_(v[r][5]) === normalize_(nama)) {
-      out.push({
-        UNIT:v[r][0],
-        TANGGAL:v[r][1],
-        HARI:v[r][2],
-        JAM_KE:v[r][3],
-        RUANG:v[r][4],
-        NAMA_PENGAWAS:v[r][5]
-      });
-    }
-  }
-
+  const out = scheduleRows_(unit).filter(r =>
+    normalize_(r.NAMA_PENGAWAS) === normalize_(nama)
+  );
   return {ok:true,data:out};
 }
-
 function checkin_(p) {
   const unit = String(p.unit || '').toUpperCase();
   const nama = String(p.nama || '').trim();
@@ -506,50 +482,32 @@ function checkin_(p) {
   if (STATUS.indexOf(status) < 0) {
     return {ok:false,message:'Status presensi tidak valid.'};
   }
-
   if (status === 'DIGANTIKAN' && !pengganti) {
     return {ok:false,message:'Pengawas pengganti wajib diisi.'};
   }
 
-  const ss = db_(unit);
-  ensureCoreSheets_(ss);
+  const jad = scheduleRows_(unit);
+  const scheduledRows = jad.filter(r =>
+    r.TANGGAL === tanggal &&
+    normalize_(r.HARI) === normalize_(hari) &&
+    normalize_(r.JAM_KE) === normalize_(jam) &&
+    normalize_(r.RUANG) === normalize_(ruang) &&
+    normalize_(r.NAMA_PENGAWAS) === normalize_(nama)
+  );
 
-  let jadwalSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
-  if (!jadwalSheet || jadwalSheet.getLastRow() <= 1) {
-    seedSchedule_(unit);
-    jadwalSheet = ss.getSheetByName(CONFIG.SHEETS.JADWAL);
-  }
-  const jad = jadwalSheet.getDataRange().getDisplayValues();
-
-  let scheduled = false;
-  let jumlah = 0;
-
-  for (let r=1; r<jad.length; r++) {
-    if (normalize_(jad[r][5]) === normalize_(nama)) jumlah++;
-
-    if (
-      String(jad[r][1]) === tanggal &&
-      normalize_(jad[r][2]) === normalize_(hari) &&
-      normalize_(jad[r][3]) === normalize_(jam) &&
-      normalize_(jad[r][4]) === normalize_(ruang) &&
-      normalize_(jad[r][5]) === normalize_(nama)
-    ) {
-      scheduled = true;
-    }
-  }
-
-  if (!scheduled) {
+  if (!scheduledRows.length) {
     return {
       ok:false,
       message:'Validasi gagal: pengawas tidak terjadwal pada tanggal/ruang/jam tersebut.'
     };
   }
 
+  const ss = db_(unit);
+  ensureCoreSheets_(ss);
   const sh = ss.getSheetByName(CONFIG.SHEETS.PRESENSI);
   const values = sh.getDataRange().getDisplayValues();
 
   let found = -1;
-
   for (let r=1; r<values.length; r++) {
     if (
       String(values[r][0]) === tanggal + ' ' + hari &&
@@ -562,22 +520,12 @@ function checkin_(p) {
     }
   }
 
-  const now = Utilities.formatDate(
-    new Date(),
-    CONFIG.TIMEZONE,
-    'dd/MM/yyyy HH:mm:ss'
-  );
+  const jumlah = jad.filter(r =>
+    normalize_(r.NAMA_PENGAWAS) === normalize_(nama)
+  ).length;
 
-  const row = [
-    tanggal + ' ' + hari,
-    nama,
-    pengganti,
-    ruang,
-    jam,
-    jumlah,
-    status,
-    now
-  ];
+  const now = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'dd/MM/yyyy HH:mm:ss');
+  const row = [tanggal + ' ' + hari, nama, pengganti, ruang, jam, jumlah, status, now];
 
   if (found > 0) {
     sh.getRange(found,1,1,row.length).setValues([row]);
@@ -586,10 +534,8 @@ function checkin_(p) {
   }
 
   updateRekap_(unit, nama);
-
   return {ok:true,message:'Presensi tersimpan.',waktu_input:now};
 }
-
 function updateRekap_(unit,nama) {
   const ss = db_(unit);
   ensureCoreSheets_(ss);
