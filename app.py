@@ -62,6 +62,7 @@ def login_screen():
         st.stop()
     names = result.get("data", [])
     source = result.get("source", {})
+    source = result.get("source", {})
     if source:
         st.caption(f"Master: {source.get("spreadsheet_name","")} · Sheet: {source.get("sheet_name","")} · Sumber: Google Sheets resmi")
     if not names:
