@@ -39,6 +39,22 @@ export interface UserSession {
   unit: UnitSekolah;
   nama: string;
   accessDate?: string;
+  isAdmin?: boolean;
+}
+
+export type LockMode = 'AUTO' | 'FORCE_LOCKED' | 'FORCE_OPEN';
+
+export interface ExamTimeSettings {
+  startTime: string; // e.g. "07:00"
+  endTime: string;   // e.g. "13:00"
+  lockMode: LockMode;
+  adminPin: string;  // e.g. "123456"
+}
+
+export interface SpreadsheetInfo {
+  id: string;
+  name: string;
+  url: string;
 }
 
 export interface ApiResponse<T = any> {

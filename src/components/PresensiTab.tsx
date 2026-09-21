@@ -1,12 +1,32 @@
-import React, { useState, useMemo } from 'react';
-import { JadwalItem, StatusKehadiran, UserSession } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { JadwalItem, StatusKehadiran, UserSession, ExamTimeSettings } from '../types';
 import { submitCheckin } from '../services/api';
-import { Clock, CheckCircle2, AlertTriangle, Send, Loader2 } from 'lucide-react';
+import { checkExamLockStatus, getCurrentSessionStatus, getSessionTimeRange } from '../data/schedule';
+import { LocationStatusCard } from './LocationStatusCard';
+import {
+  LocationCheckResult,
+  SCHOOL_LOCATION,
+  calculateDistanceMeters,
+} from '../utils/geolocation';
+import {
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  Send,
+  Loader2,
+  Lock,
+  ShieldCheck,
+  Timer,
+  AlertOctagon,
+  Navigation
+} from 'lucide-react';
+import ReminderCard from './ReminderCard';
 
 interface PresensiTabProps {
   session: UserSession;
   jadwalList: JadwalItem[];
   currentTime: Date;
+  settings: ExamTimeSettings;
   onPresensiSuccess?: () => void;
 }
 
@@ -22,8 +42,111 @@ export const PresensiTab: React.FC<PresensiTabProps> = ({
   session,
   jadwalList,
   currentTime,
+  settings,
   onPresensiSuccess,
 }) => {
+  const lockInfo = checkExamLockStatus(currentTime, settings);
+  const sessionStatus = getCurrentSessionStatus(currentTime);
+  const isLockedForUser = lockInfo.isLocked && !session.isAdmin;
+
+  // Geolocation state
+  const [locationStatus, setLocationStatus] = useState<LocationCheckResult>({
+    isChecking: false,
+    hasChecked: false,
+    isInRadius: false,
+    gpsActive: false,
+    distanceMeters: null,
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    errorMessage: null,
+  });
+
+  const checkUserLocation = (): Promise<LocationCheckResult> => {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        const res: LocationCheckResult = {
+          isChecking: false,
+          hasChecked: true,
+          isInRadius: false,
+          gpsActive: false,
+          distanceMeters: null,
+          latitude: null,
+          longitude: null,
+          accuracy: null,
+          errorMessage: 'Peramban tidak mendukung fitur Geolocation / GPS.',
+        };
+        setLocationStatus(res);
+        resolve(res);
+        return;
+      }
+
+      setLocationStatus((prev) => ({ ...prev, isChecking: true }));
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLat = position.coords.latitude;
+          const userLon = position.coords.longitude;
+          const dist = calculateDistanceMeters(
+            userLat,
+            userLon,
+            SCHOOL_LOCATION.latitude,
+            SCHOOL_LOCATION.longitude
+          );
+          const inRadius = dist <= SCHOOL_LOCATION.radiusMeters;
+
+          const res: LocationCheckResult = {
+            isChecking: false,
+            hasChecked: true,
+            isInRadius: inRadius,
+            gpsActive: true,
+            distanceMeters: dist,
+            latitude: userLat,
+            longitude: userLon,
+            accuracy: position.coords.accuracy,
+            errorMessage: null,
+          };
+          setLocationStatus(res);
+          resolve(res);
+        },
+        (error) => {
+          let msg = 'Gagal mendeteksi lokasi GPS.';
+          if (error.code === error.PERMISSION_DENIED) {
+            msg = 'Akses lokasi ditolak. Harap izinkan akses lokasi (GPS) pada peramban Anda untuk melakukan presensi.';
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            msg = 'Informasi lokasi tidak tersedia. Pastikan GPS/Location di perangkat Anda telah dihidupkan.';
+          } else if (error.code === error.TIMEOUT) {
+            msg = 'Waktu permintaan lokasi GPS habis. Silakan coba periksa lokasi kembali.';
+          }
+
+          const res: LocationCheckResult = {
+            isChecking: false,
+            hasChecked: true,
+            isInRadius: false,
+            gpsActive: false,
+            distanceMeters: null,
+            latitude: null,
+            longitude: null,
+            accuracy: null,
+            errorMessage: msg,
+          };
+          setLocationStatus(res);
+          resolve(res);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 10000,
+        }
+      );
+    });
+  };
+
+  // Check location on initial mount so teacher immediately knows their GPS status
+  useEffect(() => {
+    checkUserLocation();
+  }, []);
+
   // Determine day and date in Jakarta time
   const hariMap: Record<string, string> = {
     Monday: 'SENIN',
@@ -65,14 +188,7 @@ export const PresensiTab: React.FC<PresensiTabProps> = ({
   }, [jadwalList, selectedDay]);
 
   // Active slot calculation based on current time
-  const activeSlot = useMemo(() => {
-    const elapsedMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-    // In schools, session 1: 07:00 (420m), session 2: 07:50 (470m), etc.
-    if (elapsedMinutes >= 420 && elapsedMinutes < 470) return 'I';
-    if (elapsedMinutes >= 470 && elapsedMinutes < 520) return 'II';
-    if (elapsedMinutes >= 520 && elapsedMinutes < 570) return 'III';
-    return null;
-  }, [currentTime]);
+  const activeSlot = sessionStatus.activeSession;
 
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [status, setStatus] = useState<StatusKehadiran>('HADIR');
@@ -86,9 +202,47 @@ export const PresensiTab: React.FC<PresensiTabProps> = ({
     if (!selectedRow) return;
     setFeedback(null);
 
+    if (isLockedForUser) {
+      setFeedback({
+        type: 'error',
+        text: `Presensi dikunci: ${lockInfo.reason} Hanya Administrator yang dapat mengisi atau mengubah presensi.`
+      });
+      return;
+    }
+
     if (status === 'DIGANTIKAN' && !pengganti.trim()) {
       setFeedback({ type: 'error', text: 'Nama pengawas pengganti wajib diisi.' });
       return;
+    }
+
+    // GEOLOCATION CHECK ENFORCEMENT:
+    // Bagi pengawas umum (bukan admin), sistem WAJIB memastikan GPS aktif dan posisi berada di lingkungan Pondok Modern Al-Ghozali.
+    if (!session.isAdmin) {
+      setSubmitting(true);
+      const locRes = await checkUserLocation();
+      
+      if (!locRes.gpsActive) {
+        setSubmitting(false);
+        setFeedback({
+          type: 'error',
+          text: 'PERINGATAN: GPS BELUM DIAKTIFKAN. Harap hidupkan GPS/Lokasi perangkat Anda dan izinkan akses lokasi di browser untuk melanjutkan presensi.'
+        });
+        return;
+      }
+
+      if (!locRes.isInRadius) {
+        setSubmitting(false);
+        const distInfo = locRes.distanceMeters
+          ? locRes.distanceMeters > 1000
+            ? `${(locRes.distanceMeters / 1000).toFixed(1)} km`
+            : `${locRes.distanceMeters} meter`
+          : 'jauh';
+        setFeedback({
+          type: 'error',
+          text: `PERINGATAN: ANDA BERADA DI LUAR LOKASI RESMI (${distInfo} dari Pondok Modern Al-Ghozali). Presensi hanya dapat dilakukan di lingkungan Pondok Modern Al-Ghozali, Jl. Permata No. 19 RT 006 RW 005 Curug, Gunung Sindur, Bogor.`
+        });
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -119,6 +273,37 @@ export const PresensiTab: React.FC<PresensiTabProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Lock banner if locked */}
+      {isLockedForUser && (
+        <div className="p-4 rounded-xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs flex items-start gap-3 shadow-xs">
+          <Lock className="w-5 h-5 flex-shrink-0 text-rose-600 mt-0.5" />
+          <div className="space-y-1.5">
+            <strong className="block text-sm font-black text-rose-950 tracking-wide">
+              WAKTU UJIAN SELESAI / SISTEM TERKUNCI
+            </strong>
+            <p className="font-bold text-rose-800">{lockInfo.reason}</p>
+            <div className="p-2.5 bg-white/90 rounded-lg border border-rose-200 text-2xs font-bold text-rose-900 leading-relaxed">
+              PENGAWAS TIDAK DIIZINKAN MASUK ATAU MENGIRIM PRESENSI SETELAH WAKTU UJIAN BERAKHIR. BILA TERKENDALA LOGIN SILAKAN HUBUNGI ADMINISTRATOR ATAU PANITIA UJIAN.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {session.isAdmin && (
+        <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-blue-600 flex-shrink-0" />
+          <span>
+            <strong>Mode Administrator:</strong> Anda memiliki hak bypass penguncian jam digital dan bypass validasi geofencing lokasi untuk kebutuhan verifikasi panitia.
+          </span>
+        </div>
+      )}
+
+      {/* Geofence & GPS Location Validation Card */}
+      <LocationStatusCard
+        locationStatus={locationStatus}
+        onRefreshLocation={checkUserLocation}
+        isAdmin={session.isAdmin}
+      />
       {/* Header bar with time */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200">
         <div>
@@ -154,14 +339,24 @@ export const PresensiTab: React.FC<PresensiTabProps> = ({
 
       {/* Active slot indicator */}
       {activeSlot && selectedDay === hariIni && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-900">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
-          </span>
-          <div className="font-semibold text-sm">
-            JADWAL SEDANG BERLANGSUNG — JAM KE {activeSlot}
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 text-emerald-900">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
+            </span>
+            <div>
+              <div className="font-bold text-sm text-emerald-950">
+                JADWAL SEDANG BERLANGSUNG: JAM KE-{activeSlot}
+              </div>
+              <div className="text-xs text-emerald-700 font-medium mt-0.5">
+                Waktu Pelaksanaan: <strong>{getSessionTimeRange(activeSlot)}</strong>
+              </div>
+            </div>
           </div>
+          <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-2xs">
+            <Timer className="w-3 h-3" /> Sesi Sedang Berjalan
+          </span>
         </div>
       )}
 
@@ -186,13 +381,16 @@ export const PresensiTab: React.FC<PresensiTabProps> = ({
               id="select-jadwal"
               value={selectedIndex}
               onChange={(e) => setSelectedIndex(Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium"
             >
-              {filteredJadwal.map((item, idx) => (
-                <option key={`${item.RUANG}-${item.JAM_KE}-${idx}`} value={idx}>
-                  Ruang {item.RUANG} · Jam {item.JAM_KE} · {item.HARI} ({item.TANGGAL})
-                </option>
-              ))}
+              {filteredJadwal.map((item, idx) => {
+                const timeRange = getSessionTimeRange(item.JAM_KE);
+                return (
+                  <option key={`${item.RUANG}-${item.JAM_KE}-${idx}`} value={idx}>
+                    Ruang {item.RUANG} · Jam {item.JAM_KE} ({timeRange || 'Sesi Ujian'}) · {item.HARI} ({item.TANGGAL})
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -205,8 +403,11 @@ export const PresensiTab: React.FC<PresensiTabProps> = ({
                   <span className="font-bold text-gray-900 text-base">Ruang {selectedRow.RUANG}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500 uppercase tracking-wider block">Jam Ke</span>
-                  <span className="font-bold text-emerald-700 text-base">Jam {selectedRow.JAM_KE}</span>
+                  <span className="text-xs text-gray-500 uppercase tracking-wider block">Jam Ke & Waktu</span>
+                  <span className="font-bold text-emerald-700 text-base block">Jam {selectedRow.JAM_KE}</span>
+                  <span className="text-xs font-semibold text-emerald-600">
+                    {getSessionTimeRange(selectedRow.JAM_KE)}
+                  </span>
                 </div>
                 <div>
                   <span className="text-xs text-gray-500 uppercase tracking-wider block">Hari / Tanggal</span>
@@ -287,13 +488,22 @@ export const PresensiTab: React.FC<PresensiTabProps> = ({
                 type="button"
                 id="btn-simpan-presensi"
                 onClick={handleSave}
-                disabled={submitting}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-sm transition-colors duration-150 shadow-sm disabled:opacity-50"
+                disabled={submitting || isLockedForUser}
+                className={`w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold rounded-lg text-sm transition-all duration-150 shadow-sm ${
+                  isLockedForUser
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50'
+                }`}
               >
                 {submitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Menyimpan Presensi...
+                  </>
+                ) : isLockedForUser ? (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    Presensi Terkunci (Waktu Selesai)
                   </>
                 ) : (
                   <>
@@ -306,6 +516,9 @@ export const PresensiTab: React.FC<PresensiTabProps> = ({
           )}
         </div>
       )}
+
+      {/* Official Exam Reminder & SOP Card with Direct Google Form Berita Acara Link */}
+      <ReminderCard />
     </div>
   );
 };

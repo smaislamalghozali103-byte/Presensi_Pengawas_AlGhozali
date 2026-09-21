@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 450" width="100%" height="100%">
+  <defs>
+    <!-- Background Pentagon Gradient -->
+    <radialGradient id="pentagonGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#EAF9EE"/>
+      <stop offset="70%" stop-color="#C6F0D1"/>
+      <stop offset="100%" stop-color="#A2E2B3"/>
+    </radialGradient>
+
+    <!-- Gold Ribbon Gradient -->
+    <linearGradient id="ribbonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF066"/>
+      <stop offset="50%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#EAB308"/>
+    </linearGradient>
+
+    <!-- Green Shading for Foliage/Elements -->
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#15803D"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+
+    <!-- Torch Stem Gradient -->
+    <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0F5132"/>
+      <stop offset="50%" stop-color="#198754"/>
+      <stop offset="100%" stop-color="#0F5132"/>
+    </linearGradient>
+
+    <filter id="logoShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- OUTER PENTAGON (Perisai Segi Lima Resmi) -->
+  <!-- Top vertex: (200, 10), Top-right: (390, 160), Bottom-right: (320, 420), Bottom-left: (80, 420), Top-left: (10, 160) -->
+  <polygon points="200,8 392,158 322,422 78,422 8,158" 
+           fill="#047857" stroke="#047857" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- INNER PENTAGON BORDER (White stroke separator) -->
+  <polygon points="200,16 382,162 314,414 86,414 18,162" 
+           fill="#FFFFFF" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- INNER SHIELD BODY (Soft Light Green Gradient) -->
+  <polygon points="200,24 372,166 306,406 94,406 28,166" 
+           fill="url(#pentagonGrad)" stroke="#0F5132" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- STAR AT TOP (Bintang Lima Hijau Tua) -->
+  <!-- Center around (200, 80) -->
+  <polygon points="200,56 208,76 230,76 212,89 218,110 200,98 182,110 188,89 170,76 192,76" 
+           fill="#047857"/>
+
+  <!-- CENTRAL TORCH / PENNA (Pena & Obor Pendidikan) -->
+  <g>
+    <!-- Pointed Pen/Torch Tip -->
+    <path d="M200,108 L210,230 L190,230 Z" fill="url(#stemGrad)" stroke="#047857" stroke-width="1.5"/>
+    
+    <!-- Torch handle ring/connector -->
+    <circle cx="200" cy="240" r="10" fill="#FACC15" stroke="#047857" stroke-width="2"/>
+    
+    <!-- Base handle holder -->
+    <rect x="194" y="250" width="12" height="38" rx="3" fill="#047857"/>
+    <ellipse cx="200" cy="292" rx="14" ry="6" fill="#EAB308" stroke="#047857" stroke-width="1.5"/>
+    <rect x="190" y="294" width="20" height="12" rx="4" fill="#FACC15" stroke="#047857" stroke-width="1.5"/>
+  </g>
+
+  <!-- OPEN BOOK (Kitab Suci / Buku Ilmu Terbuka) -->
+  <g>
+    <!-- Left Page -->
+    <path d="M140,200 C155,195 180,196 196,204 L196,280 C180,274 155,272 136,280 Z" 
+          fill="#FFFFFF" stroke="#047857" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- Left Page Lines -->
+    <path d="M148,214 C162,210 178,212 188,216" stroke="#047857" stroke-width="1.8" stroke-dasharray="3,2" fill="none"/>
+    <path d="M148,228 C162,224 178,226 188,230" stroke="#047857" stroke-width="1.8" stroke-dasharray="3,2" fill="none"/>
+    <path d="M148,242 C162,238 178,240 188,244" stroke="#047857" stroke-width="1.8" stroke-dasharray="3,2" fill="none"/>
+    <path d="M148,256 C162,252 178,254 188,258" stroke="#047857" stroke-width="1.8" stroke-dasharray="3,2" fill="none"/>
+
+    <!-- Right Page -->
+    <path d="M260,200 C245,195 220,196 204,204 L204,280 C220,274 245,272 264,280 Z" 
+          fill="#FFFFFF" stroke="#047857" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- Right Page Lines -->
+    <path d="M252,214 C238,210 222,212 212,216" stroke="#047857" stroke-width="1.8" stroke-dasharray="3,2" fill="none"/>
+    <path d="M252,228 C238,224 222,226 212,230" stroke="#047857" stroke-width="1.8" stroke-dasharray="3,2" fill="none"/>
+    <path d="M252,242 C238,238 222,240 212,244" stroke="#047857" stroke-width="1.8" stroke-dasharray="3,2" fill="none"/>
+    <path d="M252,256 C238,252 222,254 212,258" stroke="#047857" stroke-width="1.8" stroke-dasharray="3,2" fill="none"/>
+  </g>
+
+  <!-- PADI (Left Branch of Paddy Leaves) -->
+  <g>
+    <!-- Stem -->
+    <path d="M165,108 C120,140 100,220 160,335" stroke="#047857" stroke-width="3" fill="none"/>
+    <!-- Rice grains / Leaves -->
+    <!-- Top-down leafy grains -->
+    <ellipse cx="160" cy="112" rx="14" ry="5" transform="rotate(-35 160 112)" fill="url(#leafGrad)"/>
+    <ellipse cx="145" cy="126" rx="15" ry="6" transform="rotate(-40 145 126)" fill="url(#leafGrad)"/>
+    <ellipse cx="132" cy="144" rx="16" ry="6" transform="rotate(-45 132 144)" fill="url(#leafGrad)"/>
+    <ellipse cx="122" cy="165" rx="16" ry="6" transform="rotate(-50 122 165)" fill="url(#leafGrad)"/>
+    <ellipse cx="114" cy="188" rx="16" ry="6" transform="rotate(-55 114 188)" fill="url(#leafGrad)"/>
+    <ellipse cx="108" cy="214" rx="17" ry="6.5" transform="rotate(-65 108 214)" fill="url(#leafGrad)"/>
+    <ellipse cx="106" cy="242" rx="17" ry="6.5" transform="rotate(-75 106 242)" fill="url(#leafGrad)"/>
+    <ellipse cx="108" cy="270" rx="17" ry="6.5" transform="rotate(-85 108 270)" fill="url(#leafGrad)"/>
+    <ellipse cx="115" cy="296" rx="16" ry="6" transform="rotate(-105 115 296)" fill="url(#leafGrad)"/>
+    <ellipse cx="128" cy="318" rx="15" ry="5.5" transform="rotate(-125 128 318)" fill="url(#leafGrad)"/>
+    <ellipse cx="146" cy="334" rx="13" ry="5" transform="rotate(-140 146 334)" fill="url(#leafGrad)"/>
+
+    <!-- Inner leaves layer -->
+    <ellipse cx="156" cy="132" rx="13" ry="5" transform="rotate(-25 156 132)" fill="#15803D"/>
+    <ellipse cx="144" cy="154" rx="14" ry="5.5" transform="rotate(-30 144 154)" fill="#15803D"/>
+    <ellipse cx="134" cy="178" rx="14" ry="5.5" transform="rotate(-35 134 178)" fill="#15803D"/>
+    <ellipse cx="128" cy="204" rx="14" ry="5.5" transform="rotate(-45 128 204)" fill="#15803D"/>
+    <ellipse cx="126" cy="232" rx="14" ry="5.5" transform="rotate(-55 126 232)" fill="#15803D"/>
+    <ellipse cx="127" cy="258" rx="14" ry="5.5" transform="rotate(-70 127 258)" fill="#15803D"/>
+    <ellipse cx="134" cy="284" rx="13" ry="5" transform="rotate(-85 134 284)" fill="#15803D"/>
+  </g>
+
+  <!-- KAPAS (Right Branch of Cotton Blossoms) -->
+  <g>
+    <!-- Stem -->
+    <path d="M235,108 C280,140 300,220 240,335" stroke="#047857" stroke-width="3" fill="none"/>
+    
+    <!-- Cotton buds with green calyx and white fluff -->
+    <!-- Helper macro replicated -->
+    <!-- Bud 1 -->
+    <circle cx="240" cy="115" r="7" fill="#047857"/>
+    <circle cx="240" cy="113" r="6" fill="#FFFFFF"/>
+    <!-- Bud 2 -->
+    <circle cx="254" cy="126" r="8" fill="#047857"/>
+    <circle cx="254" cy="123" r="7" fill="#FFFFFF"/>
+    <!-- Bud 3 -->
+    <circle cx="268" cy="142" r="9" fill="#047857"/>
+    <circle cx="268" cy="139" r="8" fill="#FFFFFF"/>
+    <!-- Bud 4 -->
+    <circle cx="278" cy="162" r="10" fill="#047857"/>
+    <circle cx="278" cy="158" r="9" fill="#FFFFFF"/>
+    <!-- Bud 5 -->
+    <circle cx="286" cy="186" r="11" fill="#047857"/>
+    <circle cx="286" cy="181" r="9.5" fill="#FFFFFF"/>
+    <!-- Bud 6 -->
+    <circle cx="290" cy="212" r="11.5" fill="#047857"/>
+    <circle cx="290" cy="207" r="10" fill="#FFFFFF"/>
+    <!-- Bud 7 -->
+    <circle cx="291" cy="240" r="12" fill="#047857"/>
+    <circle cx="291" cy="235" r="10.5" fill="#FFFFFF"/>
+    <!-- Bud 8 -->
+    <circle cx="288" cy="268" r="12" fill="#047857"/>
+    <circle cx="288" cy="263" r="10.5" fill="#FFFFFF"/>
+    <!-- Bud 9 -->
+    <circle cx="280" cy="294" r="11.5" fill="#047857"/>
+    <circle cx="280" cy="289" r="10" fill="#FFFFFF"/>
+    <!-- Bud 10 -->
+    <circle cx="266" cy="318" r="10.5" fill="#047857"/>
+    <circle cx="266" cy="313" r="9" fill="#FFFFFF"/>
+    <!-- Bud 11 -->
+    <circle cx="248" cy="336" r="9.5" fill="#047857"/>
+    <circle cx="248" cy="332" r="8" fill="#FFFFFF"/>
+  </g>
+
+  <!-- CHAIN RINGS / LINK (3 Golden Rings in Center) -->
+  <g>
+    <rect x="180" y="328" width="8" height="18" rx="4" fill="#FACC15" stroke="#047857" stroke-width="1.5"/>
+    <rect x="196" y="328" width="8" height="18" rx="4" fill="#FACC15" stroke="#047857" stroke-width="1.5"/>
+    <rect x="212" y="328" width="8" height="18" rx="4" fill="#FACC15" stroke="#047857" stroke-width="1.5"/>
+  </g>
+
+  <!-- CONNECTING ROPE/STEM UNDER CHAIN -->
+  <path d="M140,332 C170,350 230,350 260,332" stroke="#047857" stroke-width="3" fill="none"/>
+
+  <!-- YELLOW BANNER / RIBBON (Pita Kuning "YPI AL-GHOZALI") -->
+  <g filter="url(#logoShadow)">
+    <!-- Left Ribbon Fold/Tail -->
+    <polygon points="76,334 94,310 106,346 84,360" fill="#CA8A04" stroke="#047857" stroke-width="2"/>
+    <polygon points="68,348 88,332 94,364 74,374" fill="#FACC15" stroke="#047857" stroke-width="2"/>
+    
+    <!-- Right Ribbon Fold/Tail -->
+    <polygon points="324,334 306,310 294,346 316,360" fill="#CA8A04" stroke="#047857" stroke-width="2"/>
+    <polygon points="332,348 312,332 306,364 326,374" fill="#FACC15" stroke="#047857" stroke-width="2"/>
+
+    <!-- Main Curved Banner Body -->
+    <path d="M78,340 C140,375 260,375 322,340 L310,388 C250,422 150,422 90,388 Z" 
+          fill="url(#ribbonGrad)" stroke="#047857" stroke-width="2.5" stroke-linejoin="round"/>
+    
+    <!-- Inner Ribbon Border -->
+    <path d="M84,346 C144,379 256,379 316,346" stroke="#047857" stroke-width="1.2" fill="none"/>
+    <path d="M94,382 C152,414 248,414 306,382" stroke="#047857" stroke-width="1.2" fill="none"/>
+
+    <!-- Banner Text Path -->
+    <path id="textCurve" d="M96,388 C155,420 245,420 304,388" fill="none"/>
+    
+    <text font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="21" fill="#047857" letter-spacing="2">
+      <textPath href="#textCurve" startOffset="50%" text-anchor="middle">
+        YPI AL-GHOZALI
+      </textPath>
+    </text>
+  </g>
+</svg>

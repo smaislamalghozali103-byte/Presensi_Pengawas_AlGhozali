@@ -1,0 +1,14 @@
+[build]
+  publish = "dist"
+  command = "npm run build:client"
+
+[[redirects]]
+  from = "/api/action"
+  to = "https://script.google.com/macros/s/AKfycbwh5x9j_OaZDF5L5oO_dAcq2UdVmRpPjaL6-DsHqhs48OIN2aX39TEhMVvQwQQ1d52z/exec"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
