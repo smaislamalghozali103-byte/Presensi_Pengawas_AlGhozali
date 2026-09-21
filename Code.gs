@@ -82,8 +82,7 @@ function normalize_(s) {
   return String(s == null ? '' : s)
     .trim()
     .toUpperCase()
-    .replace(/[_\-\/]+/g, ' ')
-    .replace(/\s+/g, ' ');
+    .replace(/[^A-Z0-9]+/g, '');
 }
 
 function headerMap_(sheet) {
