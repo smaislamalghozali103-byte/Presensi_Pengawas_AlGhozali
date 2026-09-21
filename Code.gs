@@ -1,5 +1,5 @@
 const CONFIG = {
-  APP_VERSION: '2.0.0',
+  APP_VERSION: '2.1.0',
   API_KEY: 'AL-GHOZALI-PRESENSI-2026',
   TIMEZONE: 'Asia/Jakarta',
 
@@ -55,7 +55,7 @@ function doGet() {
     app:'Presensi Pengawas Al-Ghozali',
     version:CONFIG.APP_VERSION,
     status:'online',
-    master_source:'Google Spreadsheet resmi — BUKAN CSV'
+    master_source:'Master pengawas tertanam di aplikasi Python; Google Sheets untuk data transaksi'
   });
 }
 
@@ -294,9 +294,11 @@ function registerPin_(p) {
     return {ok:false,message:'PIN minimal 6 digit dan hanya angka.'};
   }
 
-  const list = getPengawas_({unit:unit});
-  if (!list.ok || list.data.indexOf(nama) < 0) {
-    return {ok:false,message:'Nama tidak ada di MASTER resmi.'};
+  // Master nama sudah ditanam di app.py.
+  // Apps Script tidak lagi memvalidasi nama terhadap sheet MASTER.
+  // AUTH_PENGAWAS menjadi penyimpanan PIN saja.
+  if (!nama) {
+    return {ok:false,message:'Nama pengawas wajib dipilih.'};
   }
 
   const ss = db_(unit);
